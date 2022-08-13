@@ -28,7 +28,8 @@ fn main() {
     // to our closure in the argument err that appears between the vertical pipes.
     //  The code in the closure can then use the err value when it runs.
     let config = Config::build(&args).unwrap_or_else(|err| {
-        println!("Problem parsing arguments: {err}");
+        // The standard library provides the eprintln! macro that prints to the standard error stream
+        eprintln!("Problem parsing arguments: {}", err);
         process::exit(1);
     });
 
@@ -44,8 +45,7 @@ fn main() {
 
     // use the prefix minigrep:: to call function in lib.rs
     if let Err(e) = minigrep::run(config) {
-        println!("Application error: {e}");
-
+        eprintln!("Application error: {}", e);
         process::exit(1);
     }
 }
