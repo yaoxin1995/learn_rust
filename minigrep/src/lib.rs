@@ -1,12 +1,13 @@
 use std::error::Error;
 use std::fs;
+use std::env;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn one_result() {
+    fn case_sensitive() {
         let query = "duct";
         // Note that the backslash after the opening double quote tells 
         // Rust not to put a newline character at the beginning of the 
@@ -14,9 +15,25 @@ mod tests {
         let contents = "\
 Rust:
 safe, fast, productive.
-Pick three.";
+Pick three.
+Duct tape.";
 
         assert_eq!(vec!["safe, fast, productive."], search(query, contents));
+    }
+
+    #[test]
+    fn case_insensitive() {
+        let query = "rUsT";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.
+Trust me.";
+
+        assert_eq!(
+            vec!["Rust:", "Trust me."],
+            search_case_insensitive(query, contents)
+        );
     }
 }
 
@@ -38,9 +55,32 @@ pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     results
 }
 
+pub fn search_case_insensitive<'a>(
+    query: &str,
+    contents: &'a str,
+) -> Vec<&'a str> {
+    // Note that query is now a String rather than a string slice, 
+    // because calling to_lowercase creates new data rather than 
+    // referencing existing data
+    let query = query.to_lowercase();
+    let mut results = Vec::new();
+
+    for line in contents.lines() {
+        //  When we pass query as an argument to the contains 
+        // method now, we need to add an ampersand because the 
+        // signature of contains is defined to take a string slice.
+        if line.to_lowercase().contains(&query) {
+            results.push(line);
+        }
+    }
+
+    results
+}
+
 pub struct Config {
     pub query: String,
     pub file_path: String,
+    pub ignore_case: bool,
 }
 
 impl Config {
@@ -56,14 +96,31 @@ impl Config {
             return Err("not enough arguments");
         }
 
-    // The args variable in main is the owner of 
-    // the argument values and is only letting the parse_config 
-    // function borrow them, which means we’d violate Rust’s borrowing 
-    // rules if Config tried to take ownership of the values in args.
+        // The args variable in main is the owner of 
+        // the argument values and is only letting the parse_config 
+        // function borrow them, which means we’d violate Rust’s borrowing 
+        // rules if Config tried to take ownership of the values in args.
         let query = args[1].clone();
         let file_path = args[2].clone();
 
-        Ok(Config { query, file_path })
+        
+        // Here, we create a new variable ignore_case. To set its value, 
+        // we call the env::var function and pass it the name of the IGNORE_CASE 
+        // environment variable. The env::var function returns a Result that will 
+        // be the successful Ok variant that contains the value of the environment 
+        // variable if the environment variable is set to any value. It will return 
+        // the Err variant if the environment variable is not set.
+
+        // We’re using the is_ok method on the Result to check whether the environment 
+        // variable is set, which means the program should do a case-insensitive search. 
+        // If the IGNORE_CASE environment variable isn’t set to anything, is_ok will 
+        // return false and the program will perform a case-sensitive search. We 
+        // don’t care about the value of the environment variable, just whether it’s 
+        // set or unset, so we’re checking is_ok rather than using unwrap, expect, 
+        // or any of the other methods we’ve seen on Result.
+        let ignore_case = env::var("IGNORE_CASE").is_ok();
+
+        Ok(Config { query, file_path, ignore_case})
     }
 }
 
@@ -88,8 +145,14 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // caller to handle.
     let contents = fs::read_to_string(config.file_path)?;
 
-    for line in search(&config.query, &contents) {
-        println!("{line}");
+    let results = if config.ignore_case {
+        search_case_insensitive(&config.query, &contents)
+    } else {
+        search(&config.query, &contents)
+    };
+
+    for line in results {
+        println!("{}", line);
     }
 
     // Third, the run function now returns an Ok value in 
