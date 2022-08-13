@@ -1,5 +1,7 @@
 // we bring the std::env module into scope with a use statement 
 use std::env;
+// handle files.
+use std::fs;
 
 fn main() {
     // env::args() returns an iterator of the command line arguments passed to minigrep
@@ -15,4 +17,11 @@ fn main() {
 
     println!("Searching for {}", query);
     println!("In file {}", filename);
+
+    // fs::read_to_string takes the filename, opens that file, 
+    // and returns a Result<String> of the file’s contents
+    let contents = fs::read_to_string(filename)
+                    .expect("Something went wrong reading the file");
+
+    println!("With text:\n{}", contents);
 }
