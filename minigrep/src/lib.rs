@@ -1,6 +1,43 @@
 use std::error::Error;
 use std::fs;
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_result() {
+        let query = "duct";
+        // Note that the backslash after the opening double quote tells 
+        // Rust not to put a newline character at the beginning of the 
+        // contents of this string literal)
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.";
+
+        assert_eq!(vec!["safe, fast, productive."], search(query, contents));
+    }
+}
+
+// we tell Rust that the data returned by the search function will 
+// live as long as the data passed into the search function in the contents argument
+//  by defining an explicit lifetime 'a in the signature of search
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut results = Vec::new();
+
+    //  helpful method to handle line-by-line iteration of strings, conveniently named lines
+    for line in contents.lines() {
+        // do something with line
+        if line.contains(query) {
+            results.push(line);
+        }
+
+    }
+
+    results
+}
+
 pub struct Config {
     pub query: String,
     pub file_path: String,
@@ -51,7 +88,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // caller to handle.
     let contents = fs::read_to_string(config.file_path)?;
 
-    println!("With text:\n{contents}");
+    for line in search(&config.query, &contents) {
+        println!("{line}");
+    }
 
     // Third, the run function now returns an Ok value in 
     // the success case. We’ve declared the run function’s 
