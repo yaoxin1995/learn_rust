@@ -7,7 +7,7 @@ mod tests {
 
     #[test]
     fn another() {
-        panic!("Make this test fail");
+        //panic!("Make this test fail");
     }
 
     use super::*;
@@ -79,7 +79,7 @@ impl Rectangle {
 }
 
 pub fn greeting(name: &str) -> String {
-    format!("Hello!")
+    format!("Hello! {}", name)
 }
 
 pub struct Guess {
