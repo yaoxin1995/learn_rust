@@ -1,0 +1,16 @@
+[package]
+name = "adder"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# adder package with our binary depend on the add_one package that has our library
+add_one = { path = "../add_one" }
+
+add_two = { path = "../add_two" }
+
+# even though rand is used somewhere in the workspace, we can’t use it in other crates 
+# in the workspace unless we add rand to their Cargo.toml files as well.
+rand = "0.8.3"

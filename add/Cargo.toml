@@ -1,0 +1,9 @@
+[workspace]
+
+# add members to the workspace by 
+# specifying the path to the package with our binary crate
+members = [
+    "adder",
+    "add_one",
+    "add_two",
+]
