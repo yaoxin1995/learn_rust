@@ -41,18 +41,29 @@ Trust me.";
 // live as long as the data passed into the search function in the contents argument
 //  by defining an explicit lifetime 'a in the signature of search
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
+    //let mut results = Vec::new();
 
     //  helpful method to handle line-by-line iteration of strings, conveniently named lines
-    for line in contents.lines() {
+    //for line in contents.lines() {
         // do something with line
-        if line.contains(query) {
-            results.push(line);
-        }
+    //    if line.contains(query) {
+    //        results.push(line);
+    //    }
 
-    }
+    //}
 
-    results
+    //results
+
+
+    //  Similar to the filter example in Listing 13-16, this code uses the filter adaptor 
+    // to keep only the lines that line.contains(query) returns true for. We then collect 
+    // the matching lines into another vector with collect. Much simpler! Feel free to make 
+    // the same change to use iterator methods in the search_case_insensitive function as 
+    // well
+    contents
+        .lines()
+            .filter(|line| line.contains(query))
+                .collect()
 }
 
 pub fn search_case_insensitive<'a>(
@@ -91,17 +102,31 @@ impl Config {
      *  able to create instances of Config by calling Config::new. Listing 12-7 
      *  shows the changes we need to make.
      */
-    pub fn build(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("not enough arguments");
-        }
 
-        // The args variable in main is the owner of 
-        // the argument values and is only letting the parse_config 
-        // function borrow them, which means we’d violate Rust’s borrowing 
-        // rules if Config tried to take ownership of the values in args.
-        let query = args[1].clone();
-        let file_path = args[2].clone();
+     // The standard library documentation for the env::args 
+     // function shows that the type of the iterator it returns is 
+     // std::env::Args, and that type implements the Iterator trait 
+     // and returns String values. We’ve updated the signature of the Config::build 
+     // function so the parameter args has a generic type with the trait bounds impl
+     // Iterator<Item = String> instead of &[String]. This usage of the impl
+     //  Trait syntax we discussed in the “Traits as Parameters” section of
+     // Chapter 10 means that args can be any type that implements the Iterator
+     //  type and returns String items
+    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+
+        args.next(); //  ignore the first value in the return value of env::args
+                     // which is the name of the program
+
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a query string"),
+        };
+            
+        let file_path = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file path"),
+        };
+            
 
         
         // Here, we create a new variable ignore_case. To set its value, 

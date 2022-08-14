@@ -12,10 +12,10 @@ fn main() {
     // iterators produce a series of values, and we can call the collect method on an iterator 
     // to turn it into a collection, such as a vector, that contains all the elements the 
     // iterator produces.
-    let args: Vec<String> = env::args().collect(); 
-    // Finally, we print the vector using the debug formatter, :?
-    println!("{:?}", args);
+    //let args: Vec<String> = env::args().collect(); 
 
+    
+ 
     // In this listing, we’ve used a method we haven’t covered in detail yet: 
     // unwrap_or_else, which is defined on Result<T, E> by the standard library. 
     // Using unwrap_or_else allows us to define some custom, non-panic! error handling. 
@@ -27,7 +27,7 @@ fn main() {
     // is the static string "not enough arguments" in build func, 
     // to our closure in the argument err that appears between the vertical pipes.
     //  The code in the closure can then use the err value when it runs.
-    let config = Config::build(&args).unwrap_or_else(|err| {
+    let config = Config::build(env::args()).unwrap_or_else(|err| {
         // The standard library provides the eprintln! macro that prints to the standard error stream
         eprintln!("Problem parsing arguments: {}", err);
         process::exit(1);
