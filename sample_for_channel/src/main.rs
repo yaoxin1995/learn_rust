@@ -1,5 +1,6 @@
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 
 fn main() {
     // We create a new channel using the mpsc::channel function; 
@@ -11,8 +12,25 @@ fn main() {
     //  move the transmitting end into a spawned thread and have it send 
     // one string so the spawned thread is communicating with the main thread
     thread::spawn(move || {
-        let val = String::from("hi");
-        tx.send(val).unwrap();
+        let vals = vec![
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("thread"),
+        ];
+
+        // The transmitter has a send method that takes the value we want to send. 
+        // The send method returns a Result<T, E> type, so if the receiver has already 
+        // been dropped and there’s nowhere to send a value, the send operation 
+        // will return an error.
+        // In this example, we’re calling unwrap to panic in case of an error
+        for val in vals {
+            tx.send(val).unwrap();
+            // pause between each by calling the thread::sleep 
+            // function with a Duration value of 1 second.
+            thread::sleep(Duration::from_secs(1));
+        }
+
     });
 
     // The receiver has two useful methods: recv and try_recv. 
@@ -25,6 +43,11 @@ fn main() {
     // The try_recv method doesn’t block, but will instead return a 
     // Result<T, E> immediately: an Ok value holding a message if one 
     // is available and an Err value if there aren’t any messages this time.
-    let received = rx.recv().unwrap();
-    println!("Got: {}", received);
+    
+    // let received = rx.recv().unwrap();
+    // println!("Got: {}", received);
+
+    for received in rx {
+        println!("Got: {}", received);
+    }
 }
