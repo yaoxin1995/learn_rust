@@ -9,6 +9,8 @@ fn main() {
     // the transmitter--and the second element is the receiving end--the receiver
     let (tx, rx) = mpsc::channel();
 
+    let tx1 = tx.clone();
+
     //  move the transmitting end into a spawned thread and have it send 
     // one string so the spawned thread is communicating with the main thread
     thread::spawn(move || {
@@ -31,6 +33,20 @@ fn main() {
             thread::sleep(Duration::from_secs(1));
         }
 
+    });
+
+    thread::spawn(move || {
+        let vals = vec![
+            String::from("more"),
+            String::from("messages"),
+            String::from("for"),
+            String::from("you"),
+        ];
+
+        for val in vals {
+            tx1.send(val).unwrap();
+            thread::sleep(Duration::from_secs(1));
+        }
     });
 
     // The receiver has two useful methods: recv and try_recv. 
