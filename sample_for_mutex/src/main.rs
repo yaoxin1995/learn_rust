@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 fn main() {
@@ -6,9 +6,12 @@ fn main() {
     // The type of m is Mutex<i32>, not i32, so we must call lock to be 
     // able to use the i32 value. We can’t forget; the type system won’t 
     // let us access the inner i32 otherwise.
-    let m = Mutex::new(5);
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
 
-    {
+    for _ in 0..10 {
+        let counter = Arc::clone(&counter);
+        let handle = thread::spawn(move || {
         // To access the data inside the mutex, 
         // we use the lock method to acquire the lock
         // This call will block the current thread so 
@@ -26,11 +29,17 @@ fn main() {
         // the end of the inner scope. As a result, we don’t risk forgetting to 
         // release the lock and blocking the mutex from being used by other 
         // threads, because the lock release happens automatically.
-        let mut num = m.lock().unwrap();
+            let mut num = counter.lock().unwrap();
 
-        
-        *num = 6;
+            *num += 1;
+        });
+        handles.push(handle);
     }
 
-    println!("m = {:?}", m);
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("Result: {}", *counter.lock().unwrap());
 }
