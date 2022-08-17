@@ -32,7 +32,10 @@ fn main() {
     // response to the stream to send data back to the client. Overall, this 
     // for loop will process each connection in turn and produce a series 
     // of streams for us to handle
-    for stream in listener.incoming() {
+
+    // You wouldn’t want a real-world web server to shut down after serving only two requests. 
+    // This code just demonstrates that the graceful shutdown and cleanup is in working order.
+    for stream in listener.incoming().take(2) {
         //  The reason we might receive errors from the incoming method 
         // when a client connects to the server is that we’re not actually 
         // iterating over connections. Instead, we’re iterating over connection 
@@ -53,6 +56,8 @@ fn main() {
             handle_connection(stream);
         });
     }
+
+    println!("Shutting down.");
 }
 
 

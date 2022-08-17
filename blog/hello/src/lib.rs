@@ -5,7 +5,7 @@ use std::{
 
 struct Worker {
     id: usize,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
@@ -21,16 +21,23 @@ impl Worker {
             // The call to recv blocks, so if there is no job yet, the current thread will wait until 
             // a job becomes available. The Mutex<T> ensures that only one Worker thread at a time is trying to request a job.
             
-            // let, any temporary values used in the expression on the right hand side of the equals sign are 
+            // with let, any temporary values used in the expression on the right hand side of the equals sign are 
             // immediately dropped when the let statement ends, so  Mutex will be released by its drop method
-            let job = receiver.lock().unwrap().recv().unwrap();
+            match receiver.lock().unwrap().recv() {
+                Ok(job) => {
+                    println!("Worker {id} got a job; executing.");
 
-            println!("Worker {id} got a job; executing.");
-
-            job();
+                    job();
+                }
+                Err(_) => {
+                    println!("Worker {id} disconnected; shutting down.");
+                    break;
+                }
+            }
         });
 
-        Worker { id, thread }
+        Worker { id: id,   // struct filed name : value
+                thread: Some(thread), }
     }
 }
 
@@ -39,7 +46,7 @@ type Job = Box<dyn FnOnce() + Send + 'static>;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>,
+    sender: Option<mpsc::Sender<Job>>,
 }
 
 impl ThreadPool {
@@ -64,7 +71,8 @@ impl ThreadPool {
         }
 
 
-        ThreadPool { workers, sender}
+        ThreadPool { workers, 
+            sender: Some(sender),}
     }
 
     // The F type parameter also has the trait bound Send and the lifetime 
@@ -90,6 +98,24 @@ impl ThreadPool {
         F: FnOnce() + Send + 'static,
     {
         let job : Job = Box::new(f);
-        self.sender.send(job).unwrap();
+        self.sender.as_ref().unwrap().send(job).unwrap();
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        // Dropping sender closes the channel, which indicates no more messages will be sent.
+        drop(self.sender.take());
+
+        // We use &mut for this because self is a mutable reference, 
+        // and we also need to be able to mutate worker
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+            
+            // take method on Option takes the Some variant out and leaves None in its place
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
     }
 }
