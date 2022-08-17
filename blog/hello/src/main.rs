@@ -5,7 +5,10 @@ use std::{
     // read from and write to the stream.
     io::{prelude::*, BufReader}, 
     net::{TcpListener, TcpStream},
+    thread,
+    time::Duration,
 };
+use hello::ThreadPool;
 
 fn main() {
     // The bind function in this scenario works like the new function in 
@@ -17,6 +20,7 @@ fn main() {
     // that it’s possible for binding to fail. we use unwrap to stop the 
     // program if errors happen.
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
 
     // The incoming method on TcpListener returns an iterator that gives us 
     // a sequence of streams (more specifically, streams of type TcpStream). 
@@ -45,7 +49,9 @@ fn main() {
         // gotten a handle to a TCP connection!
         let stream = stream.unwrap();
 
-        handle_connection(stream);
+        pool.execute(|| {
+            handle_connection(stream);
+        });
     }
 }
 
@@ -56,10 +62,13 @@ fn handle_connection(mut stream: TcpStream) {
 
 
 
-    let (status_line, filename) = if request_line == "GET / HTTP/1.1" {
-        ("HTTP/1.1 200 OK", "hello.html")
-    } else {
-        ("HTTP/1.1 404 NOT FOUND", "404.html")
+    let (status_line, filename) = match &request_line[..] {
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "hello.html"),
+        "GET /sleep HTTP/1.1" => {
+            thread::sleep(Duration::from_secs(5));
+            ("HTTP/1.1 200 OK", "hello.html")
+        }
+        _ => ("HTTP/1.1 404 NOT FOUND", "404.html"),
     };
 
     let contents = fs::read_to_string(filename).unwrap();
